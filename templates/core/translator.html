@@ -1,0 +1,1121 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block title %}SignBridge — Live ISL Translator{% endblock %}
+
+{% block extra_head %}
+<!-- Video-based Sign Engine -->
+<style>
+    .translator-layout {
+        display: grid;
+        grid-template-columns: 340px 1fr 300px;
+        grid-template-rows: calc(100vh - 70px);
+        overflow: hidden;
+    }
+
+    /* Left Panel */
+    .left-panel {
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding: 1.5rem;
+        gap: 1.25rem;
+    }
+
+    .panel-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+    }
+
+    /* Mic button */
+    .mic-zone {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .mic-btn {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: none;
+        background: var(--gradient-main);
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 30px rgba(79, 142, 247, 0.4);
+        position: relative;
+    }
+
+    .mic-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 0 40px rgba(79, 142, 247, 0.6);
+    }
+
+    .mic-btn.recording {
+        animation: pulse-ring 1.5s ease-in-out infinite;
+        background: linear-gradient(135deg, #ef4444, #f97316);
+    }
+
+    .mic-btn.processing {
+        background: linear-gradient(135deg, #f59e0b, #10b981);
+    }
+
+    .mic-status {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-align: center;
+        font-weight: 500;
+    }
+
+    /* Text input */
+    .text-input-zone {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+    }
+
+    .text-area {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-family: 'Inter', sans-serif;
+        font-size: 0.9rem;
+        padding: 0.875rem;
+        resize: none;
+        outline: none;
+        transition: border-color 0.2s;
+        min-height: 90px;
+    }
+
+    .text-area:focus {
+        border-color: var(--accent-blue);
+    }
+
+    .text-area::placeholder {
+        color: var(--text-muted);
+    }
+
+    /* Audio upload */
+    .audio-upload-zone {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+    }
+
+    .drop-area {
+        border: 2px dashed var(--border-bright);
+        border-radius: var(--radius-sm);
+        padding: 1.25rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .drop-area:hover,
+    .drop-area.dragover {
+        border-color: var(--accent-blue);
+        background: rgba(79, 142, 247, 0.05);
+    }
+
+    .drop-area input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+    }
+
+    .drop-icon {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .drop-text {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    /* Result output box */
+    .output-box {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        min-height: 80px;
+        transition: all 0.3s;
+    }
+
+    .output-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .output-text {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        word-break: break-word;
+        line-height: 1.5;
+    }
+
+    .output-text.isl {
+        color: var(--accent-cyan);
+    }
+
+    /* Context/Emotion badges row */
+    .intelligence-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    /* Avatar panel */
+    .avatar-panel {
+        background: #05070a;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
+    }
+
+    .avatar-grid-bg {
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at 50% 50%, rgba(79, 142, 247, 0.15) 0%, transparent 60%),
+            radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        opacity: 0.8;
+    }
+
+    .avatar-container {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .CWASAAvatar {
+        width: 600px;
+        height: 480px;
+        max-width: 100%;
+        max-height: 100%;
+        margin: auto;
+    }
+
+    .avatar-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        z-index: 5;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+    }
+
+    .loading-ring {
+        width: 60px;
+        height: 60px;
+        border: 3px solid rgba(79, 142, 247, 0.2);
+        border-top-color: var(--accent-blue);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .avatar-word-hint {
+        position: absolute;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 24px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+    }
+
+    .avatar-controls {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        z-index: 3;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* Right panel - Intelligence */
+    .right-panel {
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding: 1.5rem;
+        gap: 1.25rem;
+    }
+
+    .intel-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+    }
+
+    .intel-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .context-display {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .context-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        background: rgba(79, 142, 247, 0.12);
+        border: 1px solid rgba(79, 142, 247, 0.2);
+        flex-shrink: 0;
+    }
+
+    .context-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-transform: capitalize;
+    }
+
+    .context-conf {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .emotion-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .emotion-item {
+        padding: 0.625rem;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        cursor: default;
+        transition: all 0.2s;
+    }
+
+    .emotion-item.active {
+        background: rgba(139, 92, 246, 0.15);
+        border-color: rgba(139, 92, 246, 0.4);
+        color: var(--accent-purple);
+        font-weight: 700;
+    }
+
+    .token-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .token-chip {
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(34, 211, 238, 0.1);
+        border: 1px solid rgba(34, 211, 238, 0.25);
+        color: var(--accent-cyan);
+        font-size: 0.8rem;
+        font-weight: 500;
+        animation: chipIn 0.3s ease;
+    }
+
+    @keyframes chipIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    /* Feedback */
+    .feedback-stars {
+        display: flex;
+        gap: 0.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .star-btn {
+        font-size: 1.4rem;
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        transition: all 0.15s;
+        padding: 0;
+    }
+
+    .star-btn:hover,
+    .star-btn.active {
+        color: var(--accent-orange);
+        transform: scale(1.2);
+    }
+
+    .feedback-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-family: 'Inter', sans-serif;
+        font-size: 0.8rem;
+        padding: 0.75rem;
+        resize: none;
+        outline: none;
+        transition: border-color 0.2s;
+        min-height: 60px;
+        margin-bottom: 0.75rem;
+    }
+
+    .feedback-input:focus {
+        border-color: var(--accent-blue);
+    }
+
+    /* Processing overlay */
+    .processing-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        display: none;
+    }
+
+    .processing-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-bright);
+        border-radius: var(--radius);
+        padding: 2rem 3rem;
+        text-align: center;
+        box-shadow: var(--shadow-glow);
+    }
+
+    .processing-card .loading-ring {
+        margin: 0 auto 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .translator-layout {
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: auto;
+        }
+
+        .right-panel {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .translator-layout {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+            height: auto;
+            overflow: visible;
+        }
+
+        .avatar-panel {
+            height: 400px;
+        }
+
+        .left-panel,
+        .right-panel {
+            overflow-y: visible;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="translator-layout">
+
+    <!-- LEFT PANEL: Controls -->
+    <div class="left-panel">
+        <div>
+            <p class="panel-title">🎤 Live Speech</p>
+            <div class="mic-zone">
+                <button class="mic-btn" id="micBtn" onclick="startMicRecording()" title="Click to speak">
+                    <i class="fa-solid fa-microphone" id="micIcon"></i>
+                </button>
+                <div class="mic-status" id="micStatus">Click mic to start speaking</div>
+                <img src="/static/images/speechloader.gif" id="speechLoader" style="width:60px;display:none;"
+                    alt="Listening">
+            </div>
+        </div>
+
+        <div>
+            <p class="panel-title">⌨️ Text Input</p>
+            <div class="text-input-zone">
+                <textarea class="text-area" id="textInput" placeholder="Type a sentence to translate to ISL…"
+                    rows="3"></textarea>
+                <button class="btn btn-primary" style="width:100%; margin-top:0.75rem; justify-content:center;"
+                    id="btnTranslateText" onclick="translateText()">
+                    <i class="fa-solid fa-language"></i> Translate
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <p class="panel-title">📁 Audio File ({{ supported_formats }})</p>
+            <div class="audio-upload-zone">
+                <div class="drop-area" id="dropArea">
+                    <input type="file" id="audioFileInput" accept=".wav,.mp3,.ogg,.flac,.m4a,.webm,.mpeg"
+                        onchange="handleAudioUpload(event)">
+                    <span class="drop-icon">🎧</span>
+                    <div class="drop-text">Click or drag &amp; drop audio file</div>
+                </div>
+                <div id="uploadStatus"
+                    style="margin-top:0.75rem; font-size:0.8rem; color:var(--text-muted); display:none;"></div>
+            </div>
+        </div>
+
+        <div>
+            <p class="panel-title">📢 Speech Output</p>
+            <div class="output-box">
+                <div class="output-label">Recognized Speech</div>
+                <div class="output-text" id="speechText">—</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="output-box" style="background:rgba(34,211,238,0.05); border-color:rgba(34,211,238,0.15);">
+                <div class="output-label">ISL Translation</div>
+                <div class="output-text isl" id="islText">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CENTER: Avatar -->
+    <div class="avatar-panel">
+        <div class="avatar-grid-bg"></div>
+
+        <div class="avatar-container" id="avatarContainer">
+            <img id="signImageAvatar" src="/static/images/avatar.png"
+                style="width:100%; height:100%; object-fit: contain; z-index: 10;" alt="Avatar">
+            <!-- Dual players for seamless transitions -->
+            <video id="signVideoPlayer1"
+                style="width:100%; height:100%; object-fit: contain; z-index: 10; display: none;" playsinline
+                muted></video>
+            <video id="signVideoPlayer2"
+                style="width:100%; height:100%; object-fit: contain; z-index: 10; display: none;" playsinline
+                muted></video>
+        </div>
+
+        <div class="avatar-word-hint" id="wordHint" style="display:none; z-index: 20;"></div>
+
+        <div class="avatar-controls" style="z-index: 20;">
+            <button class="btn btn-secondary" id="btnStopAv" onclick="stopAvatar()" title="Stop avatar"
+                style="padding:8px 14px;">
+                <i class="fa-solid fa-stop"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Intelligence -->
+    <div class="right-panel">
+
+        <div class="intel-card">
+            <div class="intel-title"><i class="fa-solid fa-crosshairs"></i> Context Detection</div>
+            <div class="context-display">
+                <div class="context-icon" id="contextIcon">🌐</div>
+                <div>
+                    <div class="context-name" id="contextName">—</div>
+                    <div class="context-conf" id="contextConf">Confidence: —</div>
+                </div>
+            </div>
+            <div class="confidence-bar">
+                <div class="confidence-fill" id="contextBar" style="width:0%"></div>
+            </div>
+        </div>
+
+        <div class="intel-card">
+            <div class="intel-title"><i class="fa-solid fa-face-smile"></i> Emotion Recognition</div>
+            <div class="emotion-grid" id="emotionGrid">
+                {% for em in "neutral happy casual sad urgent questioning angry"|split:" " %}
+                <div class="emotion-item" id="em-{{ em }}">
+                    {% if em == "neutral" %}😐{% elif em == "happy" %}😄{% elif em == "casual" %}😊{% elif em == "sad" %}😢
+                    {% elif em == "urgent" %}🚨{% elif em == "questioning" %}🤔{% elif em == "angry" %}😤{% endif %}
+                    {{ em|capfirst }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="intel-card">
+            <div class="intel-title"><i class="fa-solid fa-signs-post"></i> ISL Token Sequence</div>
+            <div class="token-chips" id="tokenChips">
+                <span style="color:var(--text-muted); font-size:0.8rem;">Translation result will appear here</span>
+            </div>
+        </div>
+
+        <div class="intel-card">
+            <div class="intel-title"><i class="fa-solid fa-chart-bar"></i> Session Stats</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div style="text-align:center;">
+                    <div style="font-size:1.4rem; font-weight:700;" id="statConf" class="gradient-text">—</div>
+                    <div
+                        style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">
+                        Confidence</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:1.4rem; font-weight:700;" id="statTime" class="gradient-text">—</div>
+                    <div
+                        style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">
+                        Process Time</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="intel-card">
+            <div class="intel-title"><i class="fa-solid fa-star"></i> Rate This Translation</div>
+            <div class="feedback-stars" id="feedbackStars">
+                <!-- Hardcoded for maximal reliability and no template filter dependency -->
+                <button class="star-btn" onclick="setRating(1)" id="star-1">★</button>
+                <button class="star-btn" onclick="setRating(2)" id="star-2">★</button>
+                <button class="star-btn" onclick="setRating(3)" id="star-3">★</button>
+                <button class="star-btn" onclick="setRating(4)" id="star-4">★</button>
+                <button class="star-btn" onclick="setRating(5)" id="star-5">★</button>
+            </div>
+            <textarea class="feedback-input" id="feedbackComment"
+                placeholder="Optional correction or comment…"></textarea>
+            <button class="btn btn-secondary" style="width:100%; justify-content:center;" id="btnSubmitFeedback"
+                onclick="submitFeedback()" disabled>
+                <i class="fa-solid fa-paper-plane"></i> Submit Feedback
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Processing overlay -->
+<div class="processing-overlay" id="processingOverlay">
+    <div class="processing-card">
+        <div class="loading-ring"></div>
+        <div style="font-weight:600; margin-bottom:0.25rem;" id="overlayMessage">Processing…</div>
+        <div style="font-size:0.8rem; color:var(--text-muted);">Analyzing context & translating to ISL</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">
+    // ─── Globals ─────────────────────────────────────────────────────────────────
+    let currentSessionId = null;
+    let currentRating = 0;
+    let isRecording = false;
+    let recognition = null;
+
+    // Player state
+    let wordArray = [];
+    let i_word = 0;
+    let isPlaying = false;
+    let signVideoPlayers = [];
+    let activePlayerIdx = 0;
+    let currentSequence = [];
+
+    const CONTEXT_ICONS = {
+        medical: '🏥', educational: '📚', casual: '😊',
+        emergency: '🚨', legal: '⚖️', general: '🌐'
+    };
+
+    window.addEventListener('load', function () {
+        signVideoPlayers = [
+            document.getElementById('signVideoPlayer1'),
+            document.getElementById('signVideoPlayer2')
+        ];
+
+        // Set up listeners for both players
+        signVideoPlayers.forEach(p => {
+            p.addEventListener('ended', playNextSign);
+        });
+    });
+
+    // ─── Mic Recording ───────────────────────────────────────────────────────────
+    function startMicRecording() {
+        if (isRecording) {
+            stopMicUI();
+            return;
+        }
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            showToast('⚠️ Speech recognition not supported in this browser. Please use Google Chrome or Microsoft Edge.', 'error');
+            return;
+        }
+
+        // Security check: Web Speech API requires HTTPS (except for localhost)
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            showToast('⚠️ Microphone access requires a secure (HTTPS) connection. Please contact the administrator.', 'error');
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-IN';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        const micBtn = document.getElementById('micBtn');
+        const micIcon = document.getElementById('micIcon');
+        const micStatus = document.getElementById('micStatus');
+        const speechLoader = document.getElementById('speechLoader');
+
+        micBtn.classList.add('recording');
+        micIcon.className = 'fa-solid fa-stop';
+        micStatus.textContent = '🔴 Listening... Click to stop';
+        speechLoader.style.display = 'block';
+        isRecording = true;
+
+        try {
+            recognition.start();
+        } catch (err) {
+            console.error("Speech recognition start error:", err);
+            stopMicUI();
+            showToast('Could not start microphone: ' + err.message, 'error');
+            return;
+        }
+
+        recognition.onresult = function (e) {
+            const speech = e.results[0][0].transcript;
+            document.getElementById('speechText').textContent = speech;
+            document.getElementById('textInput').value = speech;
+            stopMicUI();
+            showOverlay('Translating "' + speech.substring(0, 30) + (speech.length > 30 ? '…' : '') + '"');
+            callTranslateAPI(speech, 'speech');
+        };
+
+        recognition.onerror = function (e) {
+            console.error("Speech recognition error event:", e.error);
+            stopMicUI();
+
+            // Provide more helpful messages based on specific error types
+            let msg = 'Mic error: ' + e.error;
+            if (e.error === 'not-allowed') {
+                msg = 'Microphone permission denied. Please allow mic access in your browser settings.';
+            } else if (e.error === 'no-speech') {
+                msg = 'No speech detected. Please try speaking again.';
+            } else if (e.error === 'network') {
+                msg = 'Network error. Speech recognition requires an internet connection.';
+            } else if (e.error === 'audio-capture') {
+                msg = 'No microphone found. Please check your hardware.';
+            }
+
+            showToast(msg, 'error');
+        };
+
+        recognition.onend = function () {
+            if (isRecording) {
+                stopMicUI();
+            }
+        };
+    }
+
+    function stopMicUI() {
+        const micBtn = document.getElementById('micBtn');
+        const micIcon = document.getElementById('micIcon');
+        const micStatus = document.getElementById('micStatus');
+        const speechLoader = document.getElementById('speechLoader');
+
+        micBtn.classList.remove('recording', 'processing');
+        micIcon.className = 'fa-solid fa-microphone';
+        micStatus.textContent = 'Click mic to start speaking';
+        speechLoader.style.display = 'none';
+        isRecording = false;
+        if (recognition) { try { recognition.stop(); } catch (e) { } }
+    }
+
+    // ─── Text Translation ─────────────────────────────────────────────────────────
+    function translateText() {
+        console.log("translateText() called");
+        const textInputEl = document.getElementById('textInput');
+        const text = textInputEl ? textInputEl.value.trim() : '';
+
+        if (!text) {
+            showToast('Please enter some text first', 'error');
+            return;
+        }
+
+        console.log("Executing translation for: ", text);
+        const speechTextEl = document.getElementById('speechText');
+        if (speechTextEl) speechTextEl.textContent = text;
+
+        showOverlay('Translating…');
+        callTranslateAPI(text, 'text');
+    }
+
+    // Enter key in textarea
+    document.getElementById('textInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); translateText(); }
+    });
+
+    // ─── Audio Upload ─────────────────────────────────────────────────────────────
+    function handleAudioUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const uploadStatus = document.getElementById('uploadStatus');
+        uploadStatus.style.display = 'block';
+        uploadStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading & transcribing ${file.name}…`;
+
+        showOverlay('Transcribing audio…');
+
+        const formData = new FormData();
+        formData.append('audio', file);
+
+        fetch('/api/audio/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: formData
+        })
+            .then(r => r.json())
+            .then(data => {
+                hideOverlay();
+                if (data.error) {
+                    uploadStatus.innerHTML = `❌ ${data.error}`;
+                    showToast(data.error, 'error');
+                    return;
+                }
+                uploadStatus.innerHTML = `✅ Transcript: "${data.transcript}"`;
+                document.getElementById('speechText').textContent = data.transcript;
+                updateUI(data);
+                playSignSequence(data.sign_sequence);
+                showToast('Audio transcribed & translated!', 'success');
+            })
+            .catch(err => {
+                hideOverlay();
+                uploadStatus.innerHTML = '❌ Upload failed';
+                showToast('Upload failed', 'error');
+            });
+    }
+
+    // Drag & drop
+    const dropArea = document.getElementById('dropArea');
+    ['dragenter', 'dragover'].forEach(evt => dropArea.addEventListener(evt, e => { e.preventDefault(); dropArea.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(evt => dropArea.addEventListener(evt, e => { e.preventDefault(); dropArea.classList.remove('dragover'); }));
+    dropArea.addEventListener('drop', e => {
+        const file = e.dataTransfer.files[0];
+        if (file) { document.getElementById('audioFileInput').files = e.dataTransfer.files; handleAudioUpload({ target: { files: [file] } }); }
+    });
+
+    // ─── API Call ─────────────────────────────────────────────────────────────────
+    function callTranslateAPI(text, inputType) {
+        console.log(`Calling API: /api/translate/ for inputType=${inputType}`);
+        fetch('/api/translate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ text: text })
+        })
+            .then(r => {
+                console.log("API Response status:", r.status);
+                if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+                return r.json();
+            })
+            .then(data => {
+                console.log("API Data received:", data);
+                hideOverlay();
+                if (data.error) {
+                    console.error("API Error data:", data.error);
+                    showToast(data.error, 'error');
+                    return;
+                }
+                updateUI(data);
+                playSignSequence(data.sign_sequence);
+                showToast('Translation complete!', 'success');
+            })
+            .catch(err => {
+                console.error("Translation API full error:", err);
+                hideOverlay();
+                showToast('Translation failed: ' + err.message, 'error');
+            });
+    }
+
+    // ─── Update UI ────────────────────────────────────────────────────────────────
+    function updateUI(data) {
+        currentSessionId = data.session_id;
+
+        // ISL text
+        document.getElementById('islText').textContent = data.isl_string || '—';
+
+        // Context
+        const ctx = data.context || 'general';
+        document.getElementById('contextIcon').textContent = CONTEXT_ICONS[ctx] || '🌐';
+        document.getElementById('contextName').textContent = ctx.charAt(0).toUpperCase() + ctx.slice(1);
+        document.getElementById('contextConf').textContent = `Confidence: ${Math.round((data.context_confidence || 0) * 100)}%`;
+        document.getElementById('contextBar').style.width = ((data.context_confidence || 0) * 100) + '%';
+
+        // Emotion
+        document.querySelectorAll('.emotion-item').forEach(el => el.classList.remove('active'));
+        const emEl = document.getElementById('em-' + (data.emotion || 'neutral'));
+        if (emEl) emEl.classList.add('active');
+
+        // Tokens
+        const chips = document.getElementById('tokenChips');
+        chips.innerHTML = '';
+        (data.isl_tokens || []).forEach(token => {
+            const chip = document.createElement('span');
+            chip.className = 'token-chip';
+            chip.textContent = token;
+            chips.appendChild(chip);
+        });
+        if (!data.isl_tokens || data.isl_tokens.length === 0) {
+            chips.innerHTML = '<span style="color:var(--text-muted); font-size:0.8rem;">No tokens</span>';
+        }
+
+        // Stats
+        document.getElementById('statConf').textContent = Math.round((data.confidence || 0) * 100) + '%';
+        document.getElementById('statTime').textContent = (data.processing_ms || 0) + 'ms';
+
+        // Feedback reset
+        currentRating = 0;
+        document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('feedbackComment').value = '';
+        document.getElementById('btnSubmitFeedback').disabled = true;
+    }
+
+    // ─── Sign Player ──────────────────────────────────────────────────────────────
+    function playSignSequence(sequence) {
+        if (!sequence || sequence.length === 0) return;
+
+        // Stop current if any
+        stopAvatar();
+
+        currentSequence = sequence;
+        i_word = 0;
+        isPlaying = true;
+        activePlayerIdx = 0;
+
+        const wordHint = document.getElementById('wordHint');
+        wordHint.style.display = 'block';
+
+        document.getElementById('signImageAvatar').style.display = 'none';
+
+        playCurrentItem();
+    }
+
+    function playCurrentItem() {
+        if (!isPlaying || i_word >= currentSequence.length) {
+            finishSequence();
+            return;
+        }
+
+        const item = currentSequence[i_word];
+        const player = signVideoPlayers[activePlayerIdx];
+        const otherPlayer = signVideoPlayers[1 - activePlayerIdx];
+
+        document.getElementById('wordHint').textContent = '🤟 ' + item.word;
+
+        // Show active, hide other
+        player.style.display = 'block';
+        otherPlayer.style.display = 'none';
+
+        // If src is not already set (by preload), set it now
+        const targetSrc = '/static/videos/' + item.file;
+        if (!player.src.endsWith(item.file)) {
+            player.src = targetSrc;
+        }
+
+        player.play().catch(err => {
+            console.error("Playback failed", err);
+            setTimeout(playNextSign, 100);
+        });
+
+        // Preload next
+        if (i_word + 1 < currentSequence.length) {
+            const nextItem = currentSequence[i_word + 1];
+            otherPlayer.src = '/static/videos/' + nextItem.file;
+            otherPlayer.load();
+        }
+    }
+
+    function playNextSign() {
+        if (!isPlaying) return;
+
+        i_word++;
+        if (i_word >= currentSequence.length) {
+            finishSequence();
+            return;
+        }
+
+        // Swap players
+        activePlayerIdx = 1 - activePlayerIdx;
+        playCurrentItem();
+    }
+
+    function finishSequence() {
+        isPlaying = false;
+        const wordHint = document.getElementById('wordHint');
+        wordHint.textContent = '✅ Done';
+
+        signVideoPlayers.forEach(p => {
+            p.pause();
+            p.style.display = 'none';
+            p.src = "";
+        });
+
+        document.getElementById('signImageAvatar').style.display = 'block';
+        setTimeout(() => { if (!isPlaying) wordHint.style.display = 'none'; }, 2000);
+    }
+
+    function stopAvatar() {
+        isPlaying = false;
+        currentSequence = [];
+        signVideoPlayers.forEach(p => {
+            p.pause();
+            p.currentTime = 0;
+            p.style.display = 'none';
+            p.src = "";
+        });
+        const signImageAvatar = document.getElementById('signImageAvatar');
+        if (signImageAvatar) signImageAvatar.style.display = 'block';
+        document.getElementById('wordHint').style.display = 'none';
+    }
+
+    // ─── Feedback ────────────────────────────────────────────────────────────────
+    function setRating(r) {
+        console.log("Setting rating to:", r);
+        currentRating = r;
+        const stars = document.querySelectorAll('.star-btn');
+        stars.forEach((b, i) => {
+            if (i < r) {
+                b.classList.add('active');
+            } else {
+                b.classList.remove('active');
+            }
+        });
+        const btn = document.getElementById('btnSubmitFeedback');
+        if (btn) btn.disabled = false;
+    }
+
+    function submitFeedback() {
+        console.log("Submit feedback triggered. sessionId:", currentSessionId, "rating:", currentRating);
+        if (!currentSessionId) {
+            showToast('⚠️ No active session. Please translate something first.', 'error');
+            return;
+        }
+        if (!currentRating) {
+            showToast('⭐ Please select a star rating first.', 'error');
+            return;
+        }
+
+        const comment = document.getElementById('feedbackComment').value;
+
+        fetch('/api/feedback/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                session_id: currentSessionId,
+                rating: currentRating,
+                comment: comment
+            })
+        })
+            .then(r => r.json().then(data => ({ status: r.status, ok: r.ok, body: data })))
+            .then(res => {
+                if (!res.ok) throw new Error(res.body.error || "Server error " + res.status);
+                const d = res.body;
+                console.log("Feedback saved:", d);
+                showToast('Thank you for your feedback! 🙏', 'success');
+                document.getElementById('btnSubmitFeedback').disabled = true;
+            })
+            .catch(err => {
+                console.error("Feedback submit error:", err);
+                showToast('Failed to submit feedback. Check server console.', 'error');
+            });
+    }
+
+    // ─── Overlay ──────────────────────────────────────────────────────────────────
+    function showOverlay(msg) {
+        document.getElementById('overlayMessage').textContent = msg || 'Processing…';
+        document.getElementById('processingOverlay').style.display = 'flex';
+    }
+
+    function hideOverlay() {
+        document.getElementById('processingOverlay').style.display = 'none';
+    }
+</script>
+{% endblock %}

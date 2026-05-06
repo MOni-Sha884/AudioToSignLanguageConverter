@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}About SignBridge — AI ISL Translation{% endblock %}
+
+{% block extra_head %}
+<style>
+.about-page { padding: 4rem 2rem; max-width: 1000px; margin: 0 auto; }
+
+.about-hero {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.about-hero h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.about-hero p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+
+.module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+}
+
+.module-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    transition: all 0.3s ease;
+}
+
+.module-card:hover { border-color: var(--border-bright); box-shadow: var(--shadow-glow); transform: translateY(-4px); }
+
+.module-num {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-blue);
+    margin-bottom: 0.5rem;
+}
+
+.module-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.module-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.tech-section { margin-bottom: 4rem; }
+
+.tech-section h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.tech-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.tech-chip {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: default;
+}
+
+.tc-blue   { background: rgba(79,142,247,0.12); border: 1px solid rgba(79,142,247,0.3); color: var(--accent-blue); }
+.tc-purple { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); color: var(--accent-purple); }
+.tc-cyan   { background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.3); color: var(--accent-cyan); }
+.tc-green  { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); }
+.tc-orange { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: var(--accent-orange); }
+
+.tech-chip:hover { transform: scale(1.05); }
+
+.problem-card {
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.solution-card {
+    background: rgba(16,185,129,0.06);
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 4rem;
+}
+
+.ps-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ps-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.75;
+}
+
+.isl-grammar-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.isl-grammar-table th {
+    background: rgba(79,142,247,0.1);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+    color: var(--accent-blue);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.isl-grammar-table td {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    color: var(--text-secondary);
+}
+
+.isl-grammar-table tr:hover td { background: rgba(79,142,247,0.04); }
+
+.isl-result { color: var(--accent-cyan); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <div class="about-hero">
+        <p class="section-label">About SignBridge</p>
+        <h1>Bridging the<br><span class="gradient-text">Communication Gap</span></h1>
+        <p>
+            Current ISL systems do simple word-to-word conversion — ignoring grammar and context.
+            SignBridge goes further, understanding <em>intent and emotion</em> for natural,
+            expressive communication.
+        </p>
+    </div>
+
+    <!-- Problem & Solution -->
+    <div class="problem-card">
+        <div class="ps-title">🚫 The Problem</div>
+        <div class="ps-text">
+            Current audio-to-Indian Sign Language (ISL) translation systems perform only word-to-word
+            conversion, ignoring grammar, context, and emotional tone. This results in unnatural and
+            confusing communication, severely limiting accessibility for the 18 million deaf and
+            hard-of-hearing people in India.
+        </div>
+    </div>
+
+    <div class="solution-card">
+        <div class="ps-title">✅ Our Solution</div>
+        <div class="ps-text">
+            SignBridge is an AI-powered system that translates spoken language into ISL in real-time
+            by understanding context, intent, and emotion — delivering expressive sign language through
+            a 3D animated avatar in under 2 seconds. It applies proper ISL grammatical transformation
+            and learns from user feedback to continuously improve.
+        </div>
+    </div>
+
+    <!-- 7 Modules -->
+    <div style="margin-bottom:2rem;">
+        <p class="section-label">System Modules</p>
+        <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1.8rem; font-weight:700; margin-bottom:1.5rem;">7-Stage Processing Pipeline</h2>
+    </div>
+    <div class="module-grid">
+        <div class="module-card">
+            <div class="module-num">Module 01</div>
+            <div class="module-title">🎤 Speech Input & Preprocessing</div>
+            <div class="module-desc">Accepts live microphone input or uploaded audio files (MP3, WAV, OGG, FLAC, M4A). Performs noise reduction and audio normalization before transcription.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-num">Module 02</div>
+            <div class="module-title">📝 Speech-to-Text Conversion</div>
+            <div class="module-desc">Uses Google Web Speech API (online) or CMU Sphinx (offline fallback) for accurate transcription. Optimized for Indian English accents via en-IN locale.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-num">Module 03</div>
+            <div class="module-title">🧠 NLU: Context + Emotion</div>
+            <div class="module-desc">Keyword-weighted context detector identifies medical, educational, emergency, legal, and casual domains. Multi-pattern emotion recognizer detects urgency, happiness, sadness, anger, and questioning tone.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-num">Module 04</div>
+            <div class="module-title">🔤 Text-to-ISL Translation</div>
+            <div class="module-desc">Applies ISL grammatical rules: removes articles/auxiliaries, reorders to Topic-Comment (SOV) structure, moves time expressions to front and question words to end. Includes lemmatization.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-num">Module 05</div>
+            <div class="module-title">🤟 Gesture & Expression Synthesis</div>
+            <div class="module-desc">Maps ISL tokens to SiGML-based animation files. Falls back to letter-by-letter fingerspelling when a word sign is unavailable. Supports 850+ signs.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-num">Module 06</div>
+            <div class="module-title">🧑‍💻 Real-Time Avatar Rendering</div>
+            <div class="module-desc">CWA 3D avatar engine renders signs with smooth transitions. Multiple avatar choices (Luna, Siggi, Anna, Marc, Françoise) with SiGML-controlled gesture playback.</div>
+        </div>
+        <div class="module-card">
+            <div class="module-num">Module 07</div>
+            <div class="module-title">🔄 Feedback Learning System</div>
+            <div class="module-desc">Users rate translations (1–5 stars) and can submit text corrections. All sessions are logged to the database to enable model retraining and quality improvement over time.</div>
+        </div>
+    </div>
+
+    <!-- ISL Grammar Examples -->
+    <div class="tech-section">
+        <p class="section-label">ISL Grammar</p>
+        <h2>English → ISL Transformation</h2>
+        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.25rem;">ISL follows a SOV (Subject-Object-Verb) Topic-Comment structure, different from English SVO.</p>
+
+        <table class="isl-grammar-table">
+            <thead>
+                <tr>
+                    <th>English Input</th>
+                    <th>ISL Output (Token Sequence)</th>
+                    <th>Rule Applied</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>I am going to the hospital tomorrow.</td>
+                    <td class="isl-result">tomorrow hospital go</td>
+                    <td>Time first → Drop articles/copula → SOV order</td>
+                </tr>
+                <tr>
+                    <td>What is your name?</td>
+                    <td class="isl-result">name what</td>
+                    <td>Question word moved to end</td>
+                </tr>
+                <tr>
+                    <td>She is eating food.</td>
+                    <td class="isl-result">she food eat</td>
+                    <td>Remove auxiliary → SOV order</td>
+                </tr>
+                <tr>
+                    <td>The doctor will see you today.</td>
+                    <td class="isl-result">today doctor see</td>
+                    <td>Time first → Remove articles → SOV</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Technologies -->
+    <div class="tech-section">
+        <p class="section-label">Technologies</p>
+        <h2>Tech Stack</h2>
+        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">Backend</p>
+        <div class="tech-chips">
+            <span class="tech-chip tc-green">🐍 Python 3.10+</span>
+            <span class="tech-chip tc-green">🎸 Django 4.x</span>
+            <span class="tech-chip tc-blue">🗄️ SQLite / PostgreSQL</span>
+            <span class="tech-chip tc-purple">🔊 SpeechRecognition</span>
+            <span class="tech-chip tc-orange">🎧 pydub</span>
+            <span class="tech-chip tc-cyan">🔬 NLTK (optional)</span>
+        </div>
+        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">Frontend & Avatar</p>
+        <div class="tech-chips">
+            <span class="tech-chip tc-blue">⚡ Vanilla JS</span>
+            <span class="tech-chip tc-purple">🎨 CSS Custom Properties</span>
+            <span class="tech-chip tc-cyan">🧑‍💻 CWA SiGML Avatar Engine</span>
+            <span class="tech-chip tc-green">🌐 Google Fonts (Inter)</span>
+            <span class="tech-chip tc-orange">🎙️ Web Speech API</span>
+        </div>
+        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">Speech Recognition</p>
+        <div class="tech-chips">
+            <span class="tech-chip tc-blue">🌐 Google Web Speech API</span>
+            <span class="tech-chip tc-purple">🔌 CMU Sphinx (offline)</span>
+            <span class="tech-chip tc-green">🎯 en-IN locale (Indian English)</span>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center; padding: 2rem 0;">
+        <a href="/translator/" class="btn btn-primary" style="padding:16px 40px; font-size:1.1rem;" id="btn-try-now">
+            <i class="fa-solid fa-bolt"></i> Try SignBridge Now
+        </a>
+    </div>
+</div>
+{% endblock %}
